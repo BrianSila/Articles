@@ -14,22 +14,31 @@ A simple Python project for managing authors, magazines, and articles using SQLi
 ## Project Structure
 
 ```
-lib/
-  db/
-    connection.py      # Database connection logic
-    schema.sql         # Database schema (tables)
-    seed.py            # Seed sample data
-  models/
-    author.py          # Author model
-    magazine.py        # Magazine model
-    articles.py        # Article model
-    __init__.py        # Model imports
-  debug.py             # Debug console for interactive testing
-scripts/
-  setup_db.py          # (To be implemented) Setup database
-  run_queries.py       # (To be implemented) Example queries
-README.md              # Project documentation
-Pipfile                # Python dependencies
+code-challenge/
+├── lib/ # Main code directory
+│ ├── models/ # Model classes
+│ │ ├── __init__.py # Makes models a package
+│ │ ├── author.py # Author class with SQL methods
+│ │ ├── article.py # Article class with SQL methods
+│ │ └── magazine.py # Magazine class with SQL methods
+│ ├── db/ # Database components
+│ │ ├── __init__.py # Makes db a package
+│ │ ├── connection.py # Database connection setup
+│ │ ├── seed.py # Seed data for testing
+│ │ └── schema.sql # SQL schema definitions
+│ ├── controllers/ # Optional: Business logic
+│ │ └── __init__.py # Makes controllers a package
+│ ├── debug.py # Interactive debugging
+│ └── __init__.py # Makes lib a package
+├── tests/ # Test directory
+│ ├── __init__.py # Makes tests a package
+│ ├── test_author.py # Tests for Author class
+│ ├── test_article.py # Tests for Article class
+│ └── test_magazine.py # Tests for Magazine class
+├── scripts/ # Helper scripts
+│ ├── setup_db.py # Script to set up the database
+│ └── run_queries.py # Script to run example queries
+└── README.md # Project documentation             # Python dependencies
 ```
 
 ## Setup Instructions
