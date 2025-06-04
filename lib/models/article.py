@@ -1,5 +1,4 @@
 from db.connection import get_connection
-from lib.models import Author, Magazine
 
 class Article:
     
@@ -52,9 +51,7 @@ class Article:
         row = cursor.fetchone()
         conn.close()
         
-        if row is None:
-            return None
-        return cls(row['title'], row['author_id'], row['magazine_id'], row['id'])
+        return cls(row['title'], row['author_id'], row['magazine_id'], row['id']) if row else None
 
     @classmethod
     def find_by_title(cls, title):
@@ -86,21 +83,19 @@ class Article:
         return [cls(row['title'], row['author_id'], row['magazine_id'], row['id']) for row in rows]
 
     def author(self):
+        from lib.models.author import Author  # Local import to break circular dependency
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM authors WHERE id = ?", (self.author_id,))
         row = cursor.fetchone()
         conn.close()
-        if row is None:
-            return None
-        return Author(row['name'], row['id'])
+        return Author(row['name'], row['id']) if row else None
 
     def magazine(self):
+        from lib.models.magazine import Magazine  # Local import
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM magazines WHERE id = ?", (self.magazine_id,))
         row = cursor.fetchone()
         conn.close()
-        if row is None:
-            return None
-        return Magazine(row['name'], row['category'], row['id'])
+        return Magazine(row['name'], row['category'], row['id']) if row else None

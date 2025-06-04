@@ -1,15 +1,13 @@
 from db.connection import get_connection
-from lib.models import Article, Author
 
 class Magazine:
-
     def __init__(self, name, category, id=None):
         self.id = id 
         self._name = name
         self._category = category
 
     def __repr__(self):
-        return f"Magazine(id={self.id}, 'name={self.name}, category={self.category}')"
+        return f"Magazine(id={self.id}, name='{self.name}', category='{self.category}')"
 
     @property
     def name(self):
@@ -17,7 +15,7 @@ class Magazine:
     
     @name.setter
     def name(self, value):
-        if isinstance(value, str) and 0 <len(value) <= 100:
+        if isinstance(value, str) and 0 < len(value) <= 100:
             self._name = value
         else:
             raise ValueError("Name must be a string with length between 1 and 100")
@@ -42,6 +40,7 @@ class Magazine:
                 "INSERT INTO magazines (name, category) VALUES (?, ?) RETURNING id",
                 (self.name, self.category)
             )
+            self.id = cursor.fetchone()[0]
         else:
             cursor.execute(
                 "UPDATE magazines SET name = ?, category = ? WHERE id = ?",
@@ -52,17 +51,15 @@ class Magazine:
         conn.close()
         return self
 
-
     @classmethod
     def find_by_id(cls, id):
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM magazines WHERE id = ?", (id,))
         row = cursor.fetchone()
+        conn.close()
 
-        if row is None:
-            return None
-        return cls(row['name'], row['category'], row['id'])
+        return cls(row['name'], row['category'], row['id']) if row else None
     
     @classmethod
     def find_by_name(cls, name):
@@ -70,32 +67,33 @@ class Magazine:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM magazines WHERE name = ?", (name,))
         row = cursor.fetchone()
+        conn.close()
 
-        if row is None:
-            return None
-        return cls(row['name'], row['category'], row['id'])
+        return cls(row['name'], row['category'], row['id']) if row else None
     
     @classmethod
     def find_by_category(cls, category):
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM magazines WHERE category = ?", (category,))
-        row = cursor.fetchone()
+        rows = cursor.fetchall()
+        conn.close()
 
-        if row is None:
-            return None
-        return cls(row['name'], row['category'], row['id'])
+        return [cls(row['name'], row['category'], row['id']) for row in rows]
 
     def articles(self):
+        from lib.models.article import Article  # Local import
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM articles WHERE magazine_id = ?", (self.id,))
         rows = cursor.fetchall()
         conn.close()
 
-        return [Article(row['title'], row['author_id'], row['magazine_id'], row['id']) for row in rows]
+        return [Article(row['title'], row['author_id'], row['magazine_id'], row['id']) 
+                for row in rows]
     
     def contributors(self):
+        from lib.models.author import Author  # Local import
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -110,9 +108,10 @@ class Magazine:
         return [Author(row['name'], row['id']) for row in rows]
 
     def article_titles(self):
-        return [article._title for article in self.articles()]
+        return [article.title for article in self.articles()]
 
     def contributing_authors(self):
+        from lib.models.author import Author  # Local import
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -143,9 +142,23 @@ class Magazine:
         row = cursor.fetchone()
         conn.close()
 
-        if row is None:
-            return None
-        return cls(row['name'], row['category'], row['id'])
+        return cls(row['name'], row['category'], row['id']) if row else None
+    
+    @classmethod
+    def with_multiple_authors(cls):
+        """Returns magazines that have articles from multiple authors"""
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT magazines.*
+            FROM magazines
+            JOIN articles ON magazines.id = articles.magazine_id
+            GROUP BY magazines.id
+            HAVING COUNT(DISTINCT articles.author_id) > 1
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return [cls(row['name'], row['category'], row['id']) for row in rows]
     
     @classmethod
     def article_counts(cls):

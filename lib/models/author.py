@@ -1,8 +1,6 @@
 from db.connection import get_connection
-from lib.models import Article, Magazine
 
 class Author:
-    
     def __init__(self, name, id=None):
         self.id = id
         self._name = name
@@ -47,11 +45,9 @@ class Author:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM authors WHERE id = ?", (id,))
         row = cursor.fetchone()
+        conn.close()
 
-        if row is None:
-            return None
-        else:
-            return cls(row['name'], row['id'])
+        return cls(row['name'], row['id']) if row else None
     
     @classmethod
     def find_by_name(cls, name):
@@ -59,22 +55,23 @@ class Author:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM authors WHERE name = ?", (name,))
         row = cursor.fetchone()
+        conn.close()
 
-        if row is None:
-            return None
-        else:
-            return cls(row['name'], row['id'])
+        return cls(row['name'], row['id']) if row else None
 
     def articles(self):
+        from lib.models.article import Article  # Local import to break circular dependency
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM articles WHERE author_id = ?", (self.id,))
         rows = cursor.fetchall()
         conn.close()
 
-        return [Article(row['title'], row['author_id'], row['magazine_id'], row['id']) for row in rows]
+        return [Article(row['title'], row['author_id'], row['magazine_id'], row['id']) 
+                for row in rows]
     
     def magazines(self):
+        from lib.models.magazine import Magazine  # Local import
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -89,8 +86,9 @@ class Author:
         return [Magazine(row['name'], row['category'], row['id']) for row in rows]
 
     def add_article(self, magazine, title):
+        from lib.models.article import Article
         article = Article(title, self.id, magazine.id)
-        article.save()  
+        article.save()
         return article
     
     def topic_areas(self):
@@ -121,6 +119,4 @@ class Author:
         """)
         row = cursor.fetchone()
         conn.close()
-        if row is None:
-            return None
-        return cls(row["name"], row["id"])
+        return cls(row["name"], row["id"]) if row else None
