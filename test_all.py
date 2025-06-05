@@ -3,7 +3,6 @@ from lib.models.author import Author
 from lib.models.magazine import Magazine
 from lib.models.article import Article
 
-from search_db_conn import get_connection
 import sqlite3
 import pytest
 import os
@@ -11,8 +10,9 @@ from faker import Faker
 from random import random
 from db.connection import get_connection
 
-if not callable(globals().get("get_connection")):
-    from search_db_conn import get_connection
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 def insert_values(tbl, vals={}):
     conn = get_connection()
@@ -121,26 +121,20 @@ def get_one(records):
 def test_author_save_and_find():
     author = Author(name="Charlie")
     author.save()
-    found = None
-    if callable(globals().get("Author.find_by_name")):
-        found = Author.find_by_name("Charlie")
-    else:
-        found = find_by_name(Author, 'authors', "Charlie")
-    assert not None and found.name == "Charlie"
+    found = Author.find_by_name("Charlie")
+    assert found is not None and found.name == "Charlie"
 
 def test_author_articles():
-    author = get_one(Author.find_by_name("Alice"))
+    author = Author.find_by_name("Alice")
+    assert author is not None
     articles = author.articles() if callable(author.articles) else author.articles
     assert len(articles) == count("articles", {"author_id": author.id})
     row = get_row("articles")
     assert any(get_value(row, a, "title") == "AI Revolution" for a in articles)
 
 def test_author_magazines():
-    if callable(globals().get("Author.find_by_name")):
-        author = get_one(Author.find_by_name("Alice"))
-    else:
-        author = find_by_name(Author, 'authors', "Alice")
-    
+    author = Author.find_by_name("Alice")
+    assert author is not None
     mags = author.magazines() if callable(author.magazines) else author.magazines
     row = get_row("magazines")
     names = [get_value(row, m, 'name') for m in mags]
@@ -164,28 +158,22 @@ def test_magazine_find_by_category():
     assert get_value(row, mag, "name") == "Tech Times"
 
 def test_magazine_contributors():
-    if callable(globals().get("Magazine.find_by_name")):
-        mag = get_one(Magazine.find_by_name("Tech Times"))
-    else:
-        mag = find_by_name(Magazine, 'magazines', "Tech Times")
+    mag = Magazine.find_by_name("Tech Times")
+    assert mag is not None
     authors = mag.contributors() if callable(mag.contributors) else mag.contributors
     row = get_row("authors")
     names = [get_value(row, a, 'name') for a in authors]
     assert set(names) == {"Alice", "Bob"}
 
 def test_magazine_article_titles():
-    if callable(globals().get("Magazine.find_by_name")):
-        mag = get_one(Magazine.find_by_name("Tech Times"))
-    else:
-        mag = find_by_name(Magazine, 'magazines', "Tech Times")
+    mag = Magazine.find_by_name("Tech Times")
+    assert mag is not None
     titles = mag.article_titles() if callable(mag.article_titles) else mag.article_titles
     assert set(titles) == {"AI Revolution", "Cybersecurity Tips"}
 
 def test_magazine_contributing_authors():
-    if callable(globals().get("Magazine.find_by_name")):
-        mag = get_one(Magazine.find_by_name("Tech Times"))
-    else:
-        mag = find_by_name(Magazine, 'magazines', "Tech Times")
+    mag = Magazine.find_by_name("Tech Times")
+    assert mag is not None
     authors = mag.contributing_authors() if callable(mag.contributing_authors) else mag.contributing_authors
     assert isinstance(authors, list)
 
